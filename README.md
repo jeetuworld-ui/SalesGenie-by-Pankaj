@@ -174,7 +174,8 @@ These examples are for manual testing. Classification and generated responses ma
 
 ## Workflow Screenshot
 
-![SalesGenie workflow during development](screenshots/intake-workflow-final.png)
+![SalesGenie workflow during development](<img width="2900" height="1668" alt="SalesGenie input_01-full-canvas" src="https://github.com/user-attachments/assets/11d4d78a-b802-4191-b41c-dc40009a1812" />
+)
 
 This screenshot shows an earlier development stage and may differ from the exported main pipeline.
 
