@@ -1,59 +1,249 @@
-# SalesGenie: AI-Powered Sales Assistant
+SalesGenie: AI-Powered Sales Assistant
 
-SalesGenie is an AI-powered sales assistant built for **Oak & Ember Interiors**, a home and office furniture retailer.
+SalesGenie is an n8n workflow built for Oak & Ember Interiors, a home and office furniture retailer. It analyzes customer inquiries, qualifies sales leads, recommends catalog products, saves leads to Google Sheets, and generates CRM summaries.
 
-The project helps sales teams process inbound customer inquiries faster and more consistently. It reduces manual work by extracting customer requirements, qualifying leads, recommending suitable catalog products, preparing CRM-ready records, and generating weekly sales insights.
+Workflow Download
 
-## Problem Statement
+Download the workflow JSON
 
-Sales representatives currently spend significant time reading customer emails, identifying requirements, checking product availability, recommending products, updating CRM data, and preparing weekly reports.
+Open the file and select Download raw file to save it to your computer.
 
-This manual process can lead to delayed responses, inconsistent lead qualification, duplicate data entry, missing information, and inaccurate product recommendations.
+Implemented Features
 
-## Project Goal
+Extract customer details, product interests, quantity, budget, urgency, and requirements.
 
-Build a workflow that processes customer inquiries and helps the sales team respond with accurate, catalog-grounded recommendations.
+Route requests into four categories: sales inquiry, product question, spam, and weekly summary.
 
-## Core Capabilities
+Classify sales leads as Hot, Warm, or Cold.
 
-- Ingest and analyze customer inquiries
-- Extract customer name, email, company, product interest, budget, quantity, urgency, and requirements
-- Identify whether an input is a sales inquiry, product question, spam message, or weekly-summary request
-- Classify valid sales leads as **Hot**, **Warm**, or **Cold**
-- Recommend 1–3 relevant in-stock products from the official product catalog
-- Prevent invented product names, prices, features, colors, or stock status
-- Create CRM-ready lead records
-- Generate weekly sales insights, including lead count, lead-tier breakdown, top categories, and average budget
+Generate product recommendations using the supplied catalog.
 
-## Extended Capabilities
+Answer product questions using catalog information.
 
-- CRM auto-update using Google Sheets or CSV output
-- Competitive positioning when customers mention competitors such as IKEA
-- Personalized response drafting for valid sales inquiries
+Append sales leads and recommendations to Google Sheets.
 
-## Architecture
+Generate CRM summaries and save them to a separate sheet.
 
-SalesGenie uses a sequential workflow with early routing:
+Mark spam without creating a CRM record.
 
-```text
-Customer Inquiry
-   ↓
-Intake and Data Extraction
-   ↓
-Request Routing
-   ├── Spam → Mark invalid; no recommendation
-   ├── Product Question → Answer using catalog data
-   ├── Weekly Summary → Generate sales report
-   └── Sales Inquiry
-         ↓
-       Lead Qualification
-         ↓
-       Catalog Filtering and Product Recommendation
-         ↓
-       CRM Record and Response Draft
-         ↓
-       Evaluation and Observability TraceThis folder contains the product catalog, CRM sample, and evaluation inputs.
-A link to workflows/salesgenie-main-pipeline.json.
-Import steps: n8n → ⋯ → Import from File → select JSON.
-Setup: connect OpenAI and Google Sheets credentials; replace spreadsheet placeholders and select sheet tabs.
-Testing: edit Set Inquiry Text, then click Execute workflow.
+Product availability and budget rules are included in the AI prompts. AI-generated results should be reviewed for accuracy.
+
+Workflow Architecture
+
+Manual Trigger
+    ↓
+Set Inquiry Text
+    ↓
+SalesGenie Intake Agent
+    ↓
+Route Request Type
+    ├── Spam
+    │     └── Mark as Spam
+    │
+    ├── Product Question
+    │     └── Read Catalog → Combine Catalog → Answer Question
+    │
+    ├── Weekly Summary
+    │     └── Read CRM → Combine Records → Generate Summary
+    │           └── Save Weekly Insights
+    │
+    └── Sales Inquiry
+          └── Qualify Lead → Read Catalog → Combine Catalog
+                └── Recommend Products → Add Lead to CRM
+
+Repository Contents
+
+data/product_catalog.csv — Product catalog.
+
+data/crm_export_sample.csv — Sample CRM data.
+
+data/eval_salesgenie_inputs.txt — Example inputs for evaluation.
+
+screenshots/ — Workflow screenshots and the current workflow JSON export.
+
+README.md — Project overview and setup instructions.
+
+Requirements
+
+An n8n instance supporting the nodes in the exported workflow.
+
+OpenAI credentials with access to the configured model, or another compatible model selected in each OpenAI Chat Model node.
+
+Google Sheets credentials with access to your catalog and CRM spreadsheets.
+
+Model usage may incur API charges.
+
+Import and Setup
+
+Download the workflow JSON linked above.
+
+Open a new workflow in n8n.
+
+Open the three-dot menu (⋯) and select Import from File.
+
+Select the downloaded JSON file.
+
+Configure credentials in all five OpenAI Chat Model nodes.
+
+Configure Google Sheets credentials in every Google Sheets node.
+
+Replace the spreadsheet placeholders by selecting your own spreadsheets:
+
+YOUR_PRODUCT_CATALOG_SPREADSHEET_ID
+
+YOUR_CRM_SPREADSHEET_ID
+
+Select the appropriate sheet tab in each Google Sheets node.
+
+Refresh and verify the column mappings in Add Lead to CRM and Save Weekly Insights.
+
+Save the workflow.
+
+Credentials are not included in the shared workflow. Each user must configure their own connections.
+
+Google Sheets Setup
+
+Product Catalog
+
+Import data/product_catalog.csv into a Google Sheets spreadsheet and preserve its column headers.
+
+Select this spreadsheet and its catalog tab in:
+
+Get row(s) in sheet
+
+Read Catalog for Questions
+
+CRM Leads
+
+Create a tab named CRM Leads with these column headers:
+
+lead_id
+customer_name
+email
+company
+lead_tier
+product_interest
+budget
+urgency
+source
+date_received
+status
+assigned_to
+notes
+
+Select this tab in:
+
+Add Lead to CRM
+
+Read CRM Records for Weekly Insights
+
+The notes column stores the product recommendations as JSON text.
+
+Weekly Insights
+
+Create a tab named Weekly Insights with these column headers:
+
+generated_at
+weekly_summary
+
+Select this tab in Save Weekly Insights.
+
+Mapping correction: The current export contains a leading space in the mapped field  weekly_summary. Refresh the columns and map the agent’s output to weekly_summary without a leading space.
+
+Running the Workflow
+
+Open Set Inquiry Text.
+
+Replace the inquiry_text value with a test request.
+
+Click Execute workflow.
+
+Review the route selected and the output of each relevant node.
+
+For sales inquiries and summary requests, verify the resulting Google Sheets row.
+
+The default input is Generate weekly summary.
+
+Example Test Inputs
+
+Request type
+
+Example input
+
+Expected route
+
+Sales inquiry
+
+I need one standing desk for my home office. My total budget is $800. My name is Alex Demo and my email is alex@example.com.
+
+Lead qualification → recommendations → CRM
+
+Product question
+
+Which products in your catalog are available in dark walnut?
+
+Catalog question responder
+
+Spam
+
+Buy website traffic now! Limited-time promotion!
+
+Mark as Spam
+
+Weekly summary
+
+Generate weekly summary
+
+CRM summary → Weekly Insights sheet
+
+These examples are for manual testing. Classification and generated responses may vary.
+
+Current Limitations
+
+The workflow uses a manual trigger and a manually entered inquiry. Email, form, and webhook intake are not configured.
+
+The “weekly summary” branch currently reads all available CRM rows. Add a date filter before the summary agent to restrict reporting to a specific week.
+
+There is no scheduled weekly execution.
+
+Product answers remain in the n8n execution output; customer messages are not sent automatically.
+
+Repeated sales-inquiry tests can append duplicate leads because deduplication is not implemented.
+
+Budget and stock rules rely on AI prompts rather than deterministic validation.
+
+The shared export requires credentials, spreadsheet selection, and column mapping before use.
+
+End-to-end operation must be verified in the importing n8n environment.
+
+Planned Improvements
+
+Automatic intake from email, forms, or webhooks.
+
+Personalized sales-response drafting.
+
+Competitive positioning.
+
+Date-filtered, scheduled weekly reports.
+
+Lead deduplication.
+
+Automated evaluation and execution tracing.
+
+Deterministic validation of product prices, stock, and budget constraints.
+
+Workflow Screenshot
+
+
+
+This screenshot shows an earlier development stage and may differ from the exported main pipeline.
+
+Sharing and Security
+
+The shared JSON has been cleaned of credential references, original spreadsheet IDs and URLs, and instance metadata. The sample email uses an example address.
+
+Before publishing future exports, review them for hardcoded API keys, authentication headers, private customer data, and pinned execution data.
+
+Author
+
+Pankaj Shukla
