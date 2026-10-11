@@ -53,3 +53,7 @@ Request Routing
        CRM Record and Response Draft
          ↓
        Evaluation and Observability TraceThis folder contains the product catalog, CRM sample, and evaluation inputs.
+A link to workflows/salesgenie-main-pipeline.json.
+Import steps: n8n → ⋯ → Import from File → select JSON.
+Setup: connect OpenAI and Google Sheets credentials; replace spreadsheet placeholders and select sheet tabs.
+Testing: edit Set Inquiry Text, then click Execute workflow.
