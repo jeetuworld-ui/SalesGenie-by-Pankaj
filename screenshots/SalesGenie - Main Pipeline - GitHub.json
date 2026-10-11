@@ -1,0 +1,977 @@
+{
+  "name": "SalesGenie - Main Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "920ff5dd-8f9e-415e-94dc-d977f74b4600",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"inquiry_text\": \"Generate weekly summary\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "46b572c1-3e04-4737-adcd-cd01b5ec638c",
+      "name": "Set Inquiry Text"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the SalesGenie Intake Agent for Oak & Ember Interiors.\n\nRead the customer inquiry below.\n\nCustomer inquiry:\n{{ $json.inquiry_text }}\n\nChoose exactly one request_type:\n- sales_inquiry: customer wants to buy furniture or requests recommendations\n- product_question: customer asks about an existing product, such as price, color, features, or availability\n- spam: meaningless, suspicious, promotional, or spam-like text\n- weekly_summary: customer requests a weekly sales summary\n\nExtract only facts directly stated in the inquiry. Do not invent details.\n\nReturn one raw JSON object only.\nDo not add Markdown, explanation, code fences, or an outer \"output\" field.\n\nUse \"\" for unknown text values.\nUse 0 for unknown quantity or budget.\nUse [] when there are no requirements.\n\nUse this exact structure:\n{\n  \"request_type\": \"sales_inquiry\",\n  \"customer_name\": \"\",\n  \"email\": \"\",\n  \"company\": \"\",\n  \"product_interest\": \"\",\n  \"quantity\": 0,\n  \"budget_total\": 0,\n  \"urgency\": \"\",\n  \"requirements\": [],\n  \"competitor_mentioned\": false,\n  \"is_valid_inquiry\": true\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "feef9f39-31e1-43a9-acd5-05d1a3df5399",
+      "name": "SalesGenie Intake Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        208
+      ],
+      "id": "9abc01dc-5e1a-4e29-a859-166f7c70d33b",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"request_type\": \"sales_inquiry\",\n  \"customer_name\": \"\",\n  \"email\": \"customer@example.com\",\n  \"company\": \"\",\n  \"product_interest\": \"standing desk\",\n  \"quantity\": 1,\n  \"budget_total\": 800,\n  \"urgency\": \"\",\n  \"requirements\": [\"home office\", \"dark walnut finish\"],\n  \"competitor_mentioned\": false,\n  \"is_valid_inquiry\": true\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        208
+      ],
+      "id": "2ba440ed-fccf-41cd-b926-807e0c3688bb",
+      "name": "Structured Output Parser",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f4c62edb-b1a7-4959-b535-cfdff2cac984",
+                    "leftValue": "={{ $json.output.request_type }}",
+                    "rightValue": "spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "289018af-41b9-4d64-a20c-61f47f331deb",
+                    "leftValue": "={{ $json.output.request_type }}",
+                    "rightValue": "product_question",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "product_question"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "62ec723b-cc05-4423-838f-f1105e9a0bbd",
+                    "leftValue": "={{ $json.output.request_type }}",
+                    "rightValue": "weekly_summary",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "weekly_summary"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1fadaa7e-c4bd-4f4c-adab-51d734e17b65",
+                    "leftValue": "={{ $json.output.request_type }}",
+                    "rightValue": "sales_inquiry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sales_inquiry"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        0
+      ],
+      "id": "8948ff45-5ffc-4cfe-b3cb-225895ff21bc",
+      "name": "Route Request Type"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"status\": \"Invalid\",\n  \"notes\": \"Spam or invalid inquiry - no CRM record created\"\n}\n",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1088,
+        -464
+      ],
+      "id": "3a9f60b9-c0e9-4015-904d-766e04e49804",
+      "name": "Mark as Spam"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the SalesGenie Lead Qualifier for Oak & Ember Interiors.\n\nClassify the customer inquiry as Hot, Warm, or Cold.\n\nRules:\n- Hot: clear buying intent plus strong signals such as budget, quantity,\n  company context, contact details, or urgency.\n- Warm: clear product interest with some buying details.\n- Cold: vague request with insufficient requirements.\n\nUse only the inquiry details below. Do not invent facts.\n\nInquiry details:\n{{ JSON.stringify($json.output) }}\n\nReturn one raw JSON object only.\nDo not add Markdown, explanation, code fences, or an outer \"output\" field.\n\nUse exactly this format:\n{\n  \"lead_tier\": \"Warm\",\n  \"qualification_reason\": \"\",\n  \"missing_information\": []\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        976,
+        320
+      ],
+      "id": "a1a6e34a-0d15-4d67-8f8b-221227d12191",
+      "name": "Lead Qualifier"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o",
+          "cachedResultUrl": ""
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        592
+      ],
+      "id": "075f7e9d-ff8a-4d55-9065-2feb69043f22",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"lead_tier\": \"Warm\",\n  \"qualification_reason\": \"The customer has a clear product need and a stated budget.\",\n  \"missing_information\": []\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1200,
+        592
+      ],
+      "id": "fee418cf-220a-4b9a-af03-b241f5845aa2",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PRODUCT_CATALOG_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "product_catalog.csv",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        320
+      ],
+      "id": "ea220f6f-eb06-4365-8e83-77b6b2c578c5",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "catalog",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        320
+      ],
+      "id": "646a4105-ffe1-4149-ac97-189e4d25d928",
+      "name": "Combine Product Catalog"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the SalesGenie Catalog Recommender for Oak & Ember Interiors.\n\nRecommend one to three suitable products using only the supplied catalog.\n\nRules:\n- Recommend only products that appear in the catalog.\n- Recommend only In Stock products.\n- Do not invent products, prices, colors, features, stock status, or delivery promises.\n- Stay within the customer’s stated budget.\n- If quantity is greater than 1, use total budget divided by quantity as the maximum per-item budget.\n- If no suitable product exists, return an empty recommendations list and ask one helpful follow-up question.\n\nCustomer inquiry details:\n{{ JSON.stringify($('SalesGenie Intake Agent').item.json.output) }}\n\nLead qualification:\n{{ JSON.stringify($('Lead Qualifier').item.json.output) }}\n\nProduct catalog:\n{{ JSON.stringify($json.catalog) }}\n\nReturn one raw JSON object only. Do not add Markdown, explanations, code fences, or an outer \"output\" field.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1728,
+        320
+      ],
+      "id": "4f33cc0c-147d-4159-be1d-fbd584593ef1",
+      "name": "Catalog Recommender"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1616,
+        576
+      ],
+      "id": "c57184c1-1e8b-4d37-b204-6f9cb924a0d3",
+      "name": "OpenAI Chat Model2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"recommendations\": [\n    {\n      \"product_name\": \"Adjustable Standing Desk Pro\",\n      \"price\": 749,\n      \"availability\": \"In Stock\",\n      \"rationale\": \"It is an in-stock standing desk within the customer's $800 budget.\"\n    }\n  ],\n  \"follow_up_question\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1872,
+        576
+      ],
+      "id": "ac43e6ad-052f-4eed-8a15-6280713cfbd2",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_CRM_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "CRM Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "=SG-{{ $execution.id }}",
+            "customer_name": "={{ $('SalesGenie Intake Agent').item.json.output.customer_name }}",
+            "email": "={{ $('SalesGenie Intake Agent').item.json.output.email }}",
+            "company": "={{ $('SalesGenie Intake Agent').item.json.output.company }}",
+            "lead_tier": "={{ $('Lead Qualifier').item.json.output.lead_tier }}",
+            "product_interest": "={{ $('SalesGenie Intake Agent').item.json.output.product_interest }}",
+            "budget": "={{ $('SalesGenie Intake Agent').item.json.output.budget_total }}",
+            "urgency": "={{ $('SalesGenie Intake Agent').item.json.output.urgency }}",
+            "source": "Manual n8n test",
+            "date_received": "={{ $now.toISO() }}",
+            "status": "Open",
+            "assigned_to": "Unassigned",
+            "notes": "={{ JSON.stringify($json.output.recommendations) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_tier",
+              "displayName": "lead_tier",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_interest",
+              "displayName": "product_interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "urgency",
+              "displayName": "urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_received",
+              "displayName": "date_received",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assigned_to",
+              "displayName": "assigned_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2096,
+        320
+      ],
+      "id": "754baaea-37af-4fb8-9847-fa81189c01f6",
+      "name": "Add Lead to CRM"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_PRODUCT_CATALOG_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "product_catalog.csv",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        -272
+      ],
+      "id": "cfbc2c0f-3717-4b1d-8dfb-f5a9c9296c45",
+      "name": "Read Catalog for Questions"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "catalog",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        -272
+      ],
+      "id": "1c1506b6-5875-4a2e-84e1-1316943f627d",
+      "name": "Combine Catalog for Questions"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a product specialist for Oak & Ember Interiors.\n\nAnswer the customer question using only the product catalog below.\n\nCustomer question:\n{{ $('Set Inquiry Text').item.json.inquiry_text }}\n\nProduct catalog:\n{{ JSON.stringify($json.catalog) }}\n\nRules:\n- Give a concise, helpful answer.\n- Mention only products, colors, prices, features, or availability present in the catalog.\n- If the catalog does not contain the answer, say that clearly.\n- Do not create a lead, assign a lead tier, or mention CRM.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1584,
+        -320
+      ],
+      "id": "32a13ed4-9d90-4a01-ad59-46109b55db68",
+      "name": "Product Question Responder."
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        -144
+      ],
+      "id": "057ea514-fd92-4720-904d-bd92f07bd3f1",
+      "name": "OpenAI Chat Model3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_CRM_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "CRM Leads",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1136,
+        -32
+      ],
+      "id": "1e3399ae-2918-44aa-af2c-52317dbd3654",
+      "name": "Read CRM Records for Weekly Insights"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "crm_records",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        -32
+      ],
+      "id": "d0381e72-8266-4805-9ea8-d22035a36cea",
+      "name": "Combine CRM Records"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the SalesGenie weekly insights analyst for Oak & Ember Interiors.\n\nReview the CRM records below and write a concise weekly sales summary.\n\nCRM records:\n{{ JSON.stringify($json.crm_records) }}\n\nInclude:\n1. Total number of leads\n2. Count of Hot, Warm, and Cold leads\n3. Top product interests\n4. Important budget or urgency patterns, if available\n5. A short recommended action for the sales team\n\nRules:\n- Use only the provided CRM records.\n- Do not invent missing values.\n- Keep the summary clear and business-friendly.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1584,
+        -32
+      ],
+      "id": "c85df7b0-6b00-4422-bded-6303f5b24dbb",
+      "name": "Weekly Insights Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1456,
+        176
+      ],
+      "id": "b375a3df-c6ab-44e9-b91c-649e90868c89",
+      "name": "OpenAI Chat Model4"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_CRM_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Weekly Insights",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "generated_at": "={{ $now.toISO() }}",
+            " weekly_summary": "={{ $json.output }}"
+          },
+          "matchingColumns": [
+            "generated_at | weekly_summary"
+          ],
+          "schema": [
+            {
+              "id": "generated_at",
+              "displayName": "generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": " weekly_summary",
+              "displayName": " weekly_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1952,
+        -32
+      ],
+      "id": "b79f6203-0aa8-4dfd-9100-258eb9a36d8b",
+      "name": "Save Weekly Insights"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Inquiry Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Inquiry Text": {
+      "main": [
+        [
+          {
+            "node": "SalesGenie Intake Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SalesGenie Intake Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "SalesGenie Intake Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SalesGenie Intake Agent": {
+      "main": [
+        [
+          {
+            "node": "Route Request Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Request Type": {
+      "main": [
+        [
+          {
+            "node": "Mark as Spam",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Catalog for Questions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read CRM Records for Weekly Insights",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lead Qualifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Lead Qualifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Lead Qualifier",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Qualifier": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Combine Product Catalog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Product Catalog": {
+      "main": [
+        [
+          {
+            "node": "Catalog Recommender",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Catalog Recommender",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Catalog Recommender",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catalog Recommender": {
+      "main": [
+        [
+          {
+            "node": "Add Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Catalog for Questions": {
+      "main": [
+        [
+          {
+            "node": "Combine Catalog for Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Catalog for Questions": {
+      "main": [
+        [
+          {
+            "node": "Product Question Responder.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Product Question Responder.",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CRM Records for Weekly Insights": {
+      "main": [
+        [
+          {
+            "node": "Combine CRM Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine CRM Records": {
+      "main": [
+        [
+          {
+            "node": "Weekly Insights Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Weekly Insights Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Insights Agent": {
+      "main": [
+        [
+          {
+            "node": "Save Weekly Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
